@@ -47,8 +47,10 @@
                             (reduce + x)
                             )
                           list-of-long-lists)
+        [a b c] (sort > list-of-sums)
         ]
-    (println (first (sort > list-of-sums)))
+    (println "Part 1: " a)
+    (println "Part 2: " (+ a b c) )
     ))
 
 ;(-main)
