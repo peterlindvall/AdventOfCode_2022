@@ -5,51 +5,52 @@
     [clojure.string :as string]
     ))
 
-(def l1 (list 10 20 30))                                    ;60
-(def l2 (list 20 30 40))                                    ;90
-(def l3 (list 30 40 50))                                    ; 120
-(def sums (map + l1 l2 l3)) ; Does not work when using (map + coll) as function iterating over a seq. Use reduce
-(println sums)
-(first (sort > sums))                                       ; <-------
-(def a-str "1\n2\n3\n4\n\n5\n6\n7")
-(def str-vect (string/split a-str #"\n\n"))
+(def a-str "A X\nB Y\nC Z\n")
+(def str-vect (string/split a-str #"\n"))
 (prn str-vect)
-(def list-of-string-vectors (map (fn [s] (string/split s #"\n")) str-vect))
+(def list-of-string-vectors (map (fn [s] (string/split s #" ")) str-vect))
 (prn list-of-string-vectors)
 
-(def list-of-long-lists
-  (map (fn [x]
-         (map read-string x)
-         ) list-of-string-vectors))
-(prn list-of-long-lists)
+(defn apply-rules
+  "A,X Rock
+  B,Y Paper
+  C,Z Scissors"
+  [p1 p2]
+  (case p1
+    "A" (case p2
+          "X" (+ 1 3)
+          "Y" (+ 2 6)
+          "Z" (+ 3 0)
+          )
+    "B" (case p2
+          "X" (+ 1 0)
+          "Y" (+ 2 3)
+          "Z" (+ 3 6)
+          )
+    "C" (case p2
+          "X" (+ 1 6)
+          "Y" (+ 2 0)
+          "Z" (+ 3 3)
+          )
+    )
+  )
+(doseq [v list-of-string-vectors]
+  (print (first v) ":" (nth v 1))
+  (println " -> "(apply-rules (first v) (nth v 1))))
 
-(def list-of-sums (map (fn [x]
-                         (reduce + x)
-                         )
-                       list-of-long-lists))
+(map (fn [x] (apply-rules (first x)(nth x 1))) list-of-string-vectors)
 
-(prn list-of-sums)
-(println (first (sort > list-of-sums)))
-
+(def score (reduce + (map (fn [x] (apply-rules (first x)(nth x 1))) list-of-string-vectors)))
+(println score)
 
 (defn -main
   "Solution for day 1 in Advent of code 2022"
   [& args]
-  (let [indata (slurp "resources/indata.txt")
-        str-vect (string/split indata #"\n\n")
-        list-of-string-vectors (map (fn [s]
-                                      (string/split (string/trim-newline s) #"\n"))
-                                    str-vect)
-        list-of-long-lists (map (fn [x]
-                                  (map read-string x))
-                                list-of-string-vectors)
-        list-of-sums (map (fn [x]
-                            (reduce + x)
-                            )
-                          list-of-long-lists)
-        [a b c] (sort > list-of-sums)
+  (let [indata (slurp "resources/input.txt")
+        str-vect (string/split indata #"\n")
+        list-of-string-vectors (map (fn [s] (string/split s #" ")) str-vect)
         ]
-    (println (+ a b c))
+    (reduce + (map (fn [x] (apply-rules (first x)(nth x 1))) list-of-string-vectors))
     ))
 
 (-main)
