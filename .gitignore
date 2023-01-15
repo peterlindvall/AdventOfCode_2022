@@ -16,3 +16,5 @@ checkouts/
 node_modules/
 resources/public/js/compiled/
 .hgignore
+R
+
