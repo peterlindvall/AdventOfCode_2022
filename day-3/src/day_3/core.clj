@@ -2,11 +2,10 @@
   (:require
     [clojure.core :as core]
     [clojure.string :as string]
+    [clojure.set :as set]
     ))
 
 (comment
-  ;; ToDo Iterate through the list of strings and extract three at the time
-  ;; ToDo Intersect the sets of each string and make sure it has cardinality 1
 
   (def input (slurp "resources/input.txt.dev"))
   (def str-vect (string/split input #"\n"))
@@ -34,14 +33,14 @@
   ;; A list of vectors with two sets representing the two halves
   (def intersection (map (fn [m]
                            ;(vector (set (first m)) (set (nth m 1))))
-                           (clojure.set/intersection (set (first m)) (set (nth m 1))))
+                           (set/intersection (set (first m)) (set (nth m 1))))
                          half-string-vectors))
   (prn intersection)
   (reduce + (map (fn [m] (get-score (first m))) half-string-sets))
   (assert (= (count (first char-vect)) (count (nth char-vect 1))))
   (def set-1 (set (first char-vect)))
   (def set-2 (set (nth char-vect 1)))
-  (def intersect (clojure.set/intersection set-1 set-2))
+  (def intersect (set/intersection set-1 set-2))
   (int (first intersect))
   (assert (= 1 (count intersect)))
 
@@ -70,7 +69,7 @@
   (def string-triplets (group-in-three str-vect))
   (def badges (map (fn [m]
                      (let [[a b c] m]
-                       (clojure.set/intersection (set a) (set b) (set c)))) string-triplets))
+                       (set/intersection (set a) (set b) (set c)))) string-triplets))
 
   (reduce + (map (fn [m]
                    (if (< 0 (count m))
@@ -116,12 +115,12 @@
                                              (split-at m)
                                              )) str-vect)
         misplaced-items (map (fn [m]
-                             (clojure.set/intersection (set (first m)) (set (nth m 1))))
+                             (set/intersection (set (first m)) (set (nth m 1))))
                            half-string-vectors)
         groups-of-three (group-in-three str-vect)
         badges (map (fn [m]
                       (let [[a b c] m]
-                        (clojure.set/intersection (set a) (set b) (set c)))) groups-of-three)
+                        (set/intersection (set a) (set b) (set c)))) groups-of-three)
         ]
     ;;Assert string lengths
     (map (fn [m]
