@@ -53,22 +53,9 @@
                         val))
           0
           the-list))
-(count-true-elements '(true false true))
-(reduce + 0 '(1 2 3 4 5))                                   ;;jmf
+;(count-true-elements '(true false true))
+;(reduce + 0 '(1 2 3 4 5))                                   ;;jmf
 
-;(count-true-elements
-  (map (fn [elf-pair]
-         (let [[elf-1 elf-2] elf-pair
-               [e1-start e1-stop] elf-1
-               [e2-start e2-stop] elf-2]
-           (or
-             (and (between? e1-start e2-start e2-stop)
-                  (between? e1-stop e2-start e2-stop))
-             (and (between? e2-start e1-start e1-stop)
-                  (between? e2-stop e1-start e1-stop)
-                  ))))
-       elf-pair-vectors-integers)
-;  )
 
 
 
