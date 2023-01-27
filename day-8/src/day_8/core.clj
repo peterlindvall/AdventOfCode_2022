@@ -6,15 +6,16 @@
     ;    [clojure.set :as set]
     ;    [clojure.spec.alpha :as s]
     ))
-(comment
-  (def input (slurp "resources/test.txt"))
-  (def str-v (string/split-lines input))
-  (def tree-v (map (fn [m]
-                     (into [] (map (fn [n]
-                                     (read-string (str n)))
-                                   (into [] m)))
-                     ) str-v))
-  )
+
+(def state (atom ()))
+(defn init-state! []
+  (let [input (slurp "resources/input.txt")
+        str-v (string/split-lines input)
+        ]
+    (reset! state (map (fn [m]
+                         (into [] (map (fn [n]
+                                         (read-string (str n)))
+                                       (into [] m)))) str-v))))
 
 ;;Strategy
 ;;Iterate through "all" trees and look around until it is determined visible or not
@@ -81,49 +82,45 @@
       (= (dec (count tree-map)) row)
       (= (dec (count (first tree-map))) col)))
 
-(defn visible? [row col tree-map]
-  (or (on-the-perimeter? row col tree-map)
-      (visible-from-the-north? row col tree-map)
-      (visible-from-the-south? row col tree-map)
-      (visible-from-the-east? row col tree-map)
-      (visible-from-the-west? row col tree-map)))
+(defn visible?
+  ([index]
+   (let [[row col] index]
+     (visible? row col @state)))
+  ([row col tree-map]
+   (or (on-the-perimeter? row col tree-map)
+       (visible-from-the-north? row col tree-map)
+       (visible-from-the-south? row col tree-map)
+       (visible-from-the-east? row col tree-map)
+       (visible-from-the-west? row col tree-map))))
 
-;(map count (filter visible? tree-v))
+(comment
+  ;count-rows and count-row replaced by (filter visible? (for... in -main
+  (defn count-row [row tree-map]
+    (loop [col 0
+           visible-count 0]
+      (if (= col (count (first tree-map)))
+        visible-count
+        (recur (inc col) (if (visible? row col tree-map)
+                           (inc visible-count)
+                           visible-count)))))
 
-(defn count-row [row tree-map]
-  (loop [col 0
-         visible-count 0]
-    (if (= col (count (first tree-map)))
-      visible-count
-      (recur (inc col) (if (visible? row col tree-map)
-                         (inc visible-count)
-                         visible-count)))))
-
-(defn count-rows [tree-map]
-  (loop [row 0
-         accumulated-count 0]
-    (if (= row (count tree-map))
-      accumulated-count
-      (recur (inc row) (+ accumulated-count (count-row row tree-map))))))
-
-;(count-rows tree-v)
-
-;;ToDo Create a list of all indices in map e.g. [1 3], filter that list with visible? and count the result
+  (defn count-rows [tree-map]
+    (loop [row 0
+           accumulated-count 0]
+      (if (= row (count tree-map))
+        accumulated-count
+        (recur (inc row) (+ accumulated-count (count-row row tree-map))))))
+  )
 
 (defn -main
   [& args]
-  (let [input (slurp "resources/input.txt")
-        str-v (string/split-lines input)
-        tree-v (map (fn [m]
-                      (into [] (map (fn [n]
-                                      (read-string (str n)))
-                                    (into [] m)))
-                      ) str-v)]
-    (println "Part 1:"
-             (count-rows tree-v))
-    (println "Part 2:"
-             )
-    ))
+  (init-state!)
+  (println "Part 1:"
+           (count (filter visible? (for [row (range 0 (count @state))
+                                         col (range 0 (count (first @state)))]
+                                     [row col]))))
+           (println "Part 2:"
+                    ))
 
 (comment
   (-main)
