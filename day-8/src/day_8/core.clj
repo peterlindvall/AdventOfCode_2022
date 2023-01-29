@@ -7,15 +7,15 @@
     ;    [clojure.spec.alpha :as s]
     ))
 
-(def state (atom ()))
+(def state (atom {}))
 (defn init-state! []
   (let [input (slurp "resources/input.txt")
-        str-v (string/split-lines input)
-        ]
-    (reset! state (map (fn [m]
-                         (into [] (map (fn [n]
-                                         (read-string (str n)))
-                                       (into [] m)))) str-v))))
+        str-v (string/split-lines input)]
+    (swap! state assoc :forest (map (fn [m]
+                                      (vec (map #(Integer/parseInt %) (string/split m #"")))) str-v))
+    (swap! state assoc :last-row (dec (count (@state :forest))))
+    (swap! state assoc :last-col (dec (count (first (@state :forest)))))
+    ))
 
 ;;Strategy
 ;;Iterate through "all" trees and look around until it is determined visible or not
@@ -77,17 +77,17 @@
             true                                            ;;reached the edge!
             (recur (inc c))))))))
 
-(defn on-the-perimeter? [row col tree-map]
+(defn on-the-perimeter? [row col]
   (or (= 0 row) (= 0 col)
-      (= (dec (count tree-map)) row)
-      (= (dec (count (first tree-map))) col)))
+      (= (@state :last-row) row)
+      (= (@state :last-col) col)))
 
 (defn visible?
   ([index]
    (let [[row col] index]
-     (visible? row col @state)))
+     (visible? row col (@state :forest))))
   ([row col tree-map]
-   (or (on-the-perimeter? row col tree-map)
+   (or (on-the-perimeter? row col)
        (visible-from-the-north? row col tree-map)
        (visible-from-the-south? row col tree-map)
        (visible-from-the-east? row col tree-map)
@@ -112,15 +112,79 @@
         (recur (inc row) (+ accumulated-count (count-row row tree-map))))))
   )
 
+
+;;if not at edge, at least one tree is seen. If the height of the tree seen is lower then recur
+(defn tree-count-northbound
+  "count n:o of trees seen northbound"
+  [row col height forest]
+  (if (= 0 row)
+    0
+    (loop [trees-seen 1
+           r row]
+      (if (or (>= (get (nth forest (dec r)) col) height) (= 0 (dec r))) ;"next tree higher or equal"
+        trees-seen                                          ;won't be able to see anymore trees
+        (recur (inc trees-seen) (dec r))))))
+
+;;case 1 - alla är lägre
+;row 2
+;col 1
+;loop-1 (:trees-seen 1, :r 2, "kika på rad 1") :recur
+;loop-2 (:trees-seen 2, :r 1, "kika på rad 0)"
+
+;;ToDo helper function that returns height for tree at coordinate
+
+(defn tree-count-southbound
+  "Count n:o of trees seen southbound.
+  Is not to be called for trees in the southernmost row "
+  [row col height forest]
+  (loop [trees-seen 1
+         r row]
+    (if (or (>= (get (nth forest (inc r)) col) height) (= (@state :last-row) (inc r))) ;"next tree higher or equal"
+      trees-seen                                            ;won't be able to see anymore trees
+      (recur (inc trees-seen) (inc r)))))
+(defn tree-count-eastbound
+  "count n:o of trees seen eastbound.
+  Is not to be called for trees in the easternmost column"
+  [row col height forest]
+  (loop [trees-seen 1
+         c col]
+    (if (or (>= (get (nth forest row) (inc c)) height) (= (@state :last-col) (inc c))) ;"next tree higher or equal"
+      trees-seen                                            ;can't see anymore trees
+      (recur (inc trees-seen) (inc c)))))
+(defn tree-count-westbound
+  "count n:o of trees seen westbound.
+  Is not to be called for trees in the westernmost columnt"
+  [row col height forest]
+  (loop [trees-seen 1
+         c col]
+    (if (or (>= (get (nth forest row) (dec c)) height) (= 0 (dec c))) ;"next tree higher or equal"
+      trees-seen                                            ;can't see anymore trees
+      (recur (inc trees-seen) (dec c)))))
+(defn tree-count [row col forest]
+  (let [height (get (nth forest row) col)]
+    (if (on-the-perimeter? row col)
+      0
+      (reduce * (list (tree-count-northbound row col height forest)
+                      (tree-count-southbound row col height forest)
+                      (tree-count-eastbound row col height forest)
+                      (tree-count-westbound row col height forest))))))
+
+
+
 (defn -main
   [& args]
+  args
   (init-state!)
-  (println "Part 1:"
-           (count (filter visible? (for [row (range 0 (count @state))
-                                         col (range 0 (count (first @state)))]
-                                     [row col]))))
-           (println "Part 2:"
-                    ))
+  (let [coordinates (for [row (range 0 (count (@state :forest)))
+                          col (range 0 (count (first (@state :forest))))]
+                      [row col])]
+    (println "Part 1:"
+             (count (filter visible? coordinates)))
+    (println "Part 2:"
+             (apply max (map (fn [index]
+                               (let [[row col] index]
+                                 (tree-count row col (@state :forest))))
+                             coordinates)))))
 
 (comment
   (-main)
