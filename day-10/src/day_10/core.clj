@@ -16,33 +16,44 @@
                              (if value
                                {:cmd cmd, :value (read-string value)}
                                {:cmd cmd}))) str-v))
-(reverse (conj '(3 2 1) 4))
-(empty? nil)
+
 ;Add to input map how many cycles each command will use before the result of it is available
 (def complete-data-structure (loop [input input-map-list
                                     output-map-list ()
                                     cycles 0
                                     x-reg 1]
-                               (let [new-cycles (+ cycles (if (= ((first input) :cmd) "addx") 3 1))
-                                     new-map (assoc (first input) :last-cycle-used new-cycles)
+                               (let [current-map (first input)
+                                     new-cycles (+ cycles (if (= "addx" (current-map :cmd)) 2 1))
                                      last-map (first output-map-list)
-                                     new-map (assoc new-map :x-reg (cond (empty? last-map) x-reg
-                                                                         (= "addx" (last-map :cmd)) (+ x-reg (last-map :value))
-                                                                         (= "noop" (last-map :cmd)) x-reg))]
+                                     map-last-cycle-used {:last-cycle-used new-cycles}
+                                     map-x-reg {:x-reg (cond (empty? last-map) x-reg
+                                                             (= "addx" (last-map :cmd)) (+ x-reg (last-map :value))
+                                                             (= "noop" (last-map :cmd)) x-reg)}]
                                  (if (= 1 (count input))
-                                   (into [] (reverse output-map-list))
+                                   (reverse output-map-list)
                                    (recur (rest input)
-                                          (conj output-map-list new-map)
+                                          (conj output-map-list (conj current-map map-x-reg map-last-cycle-used))
                                           new-cycles
-                                          (new-map :x-reg))))))
+                                          (map-x-reg :x-reg))))))
 
+(def poi-seq (take 100 (filter #(or (= 20 %) (= 0 (mod (+ 20 %) 40))) (range))))
 
+(def with-signal-strengths (loop [poi poi-seq
+       maps complete-data-structure
+       new-map-list ()]
+  (let [at-poi? (<= (first poi) ((first maps) :last-cycle-used))
+        current-map (first maps)
+        signal-strength {:signal-strength (* (first poi) (current-map :x-reg))}
+        next-poi (if at-poi? (rest poi) poi)]
+    (if (= 1 (count maps))
+      new-map-list
+      (recur next-poi
+             (rest maps)
+             (if at-poi? (conj new-map-list (conj current-map signal-strength))
+                         (conj new-map-list current-map)))))))
 
-
-(contains? #{20 40 60} 20)
-
-
-
+(reduce (fn [sum el]
+          (+ sum (el :signal-strength))) 0 (filter #(contains? % :signal-strength) with-signal-strengths))
 
 (defn -main
   "Solution for day 10"
